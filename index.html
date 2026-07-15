@@ -935,6 +935,30 @@
     else { lock(); startField(); }
   })();
 
+  /* ===== use the headshot as the browser-tab icon (favicon), generated from the embedded photo ===== */
+  (function(){
+    var img = document.querySelector('.c-cut'); if(!img) return;
+    function make(){
+      try{
+        var S = 64, c = document.createElement('canvas'); c.width = c.height = S;
+        var x = c.getContext('2d');
+        var iw = img.naturalWidth, ih = img.naturalHeight;
+        var side = iw, sx = 0, sy = Math.round(ih*0.03);   // top-anchored square = head + shoulders
+        if(sy + side > ih) sy = Math.max(0, ih - side);
+        x.beginPath(); x.arc(S/2, S/2, S/2, 0, Math.PI*2); x.closePath(); x.clip();  // round icon
+        x.drawImage(img, sx, sy, side, side, 0, 0, S, S);
+        var url = c.toDataURL('image/png');
+        var link = document.querySelector("link[rel~='icon']");
+        if(!link){ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+        link.type = 'image/png'; link.href = url;
+        var apple = document.querySelector("link[rel='apple-touch-icon']");
+        if(!apple){ apple = document.createElement('link'); apple.rel = 'apple-touch-icon'; document.head.appendChild(apple); }
+        apple.href = url;
+      }catch(e){}
+    }
+    if(img.complete && img.naturalWidth) make(); else img.addEventListener('load', make);
+  })();
+
   // reveal
   var rvs=document.querySelectorAll('.rv');
   if('IntersectionObserver' in window){
