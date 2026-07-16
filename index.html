@@ -342,9 +342,7 @@
 
   /* glassy, layered material for the primary surfaces */
   .card,.ship,.strip .item,.facts,.edge-list .row,.proof-panel{
-    background:var(--glass);
-    -webkit-backdrop-filter:blur(10px) saturate(120%);
-    backdrop-filter:blur(10px) saturate(120%);
+    background:rgba(15,15,17,.55);                 /* solid dark-glass: no backdrop-filter = smooth scroll */
     border:1px solid var(--glass-line) !important;
     box-shadow:var(--lift);
   }
@@ -457,11 +455,8 @@
   header.nav{transition:box-shadow .3s, background .3s, border-color .3s}
   header.nav.scrolled{background:rgba(10,10,10,.78);box-shadow:0 10px 34px -16px rgba(0,0,0,.8);border-bottom-color:rgba(255,92,0,.28)}
 
-  /* ===== PERFORMANCE: don't paint offscreen sections until they're near the viewport ===== */
-  #work,#built,#about,.certs,.quote-band,.final,.edge,.tshape-sec{
-    content-visibility:auto;
-    contain-intrinsic-size:auto 640px;
-  }
+  /* ===== PERFORMANCE: sections pre-render behind the intro gate, so scrolling into them is jank-free =====
+     (content-visibility removed on purpose — it deferred first paint and caused the first-scroll choppiness) */
 
   /* WebGL living energy field behind the hero (falls back to the CSS aurora if unsupported) */
   .hero-webgl{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.9}
@@ -820,17 +815,22 @@
       <p class="quote" style="margin-top:14px">Outside the ad accounts, I'm just a <em>student</em> who likes to learn, build, and grow.</p>
       <p>I'm on a <b>full-ride international scholarship</b>, a long way from home, and a little obsessed with <b>self development and fulfillment</b>. Inquisitive is basically the whole personality.</p>
       <p>Off the clock I'm usually playing <b>badminton, cricket, and soccer</b>, and I'm a <b>Barcelona</b> fan through the good years and the painful ones.</p>
-      <p>On campus I serve as <b>MSA President</b>, <b>badminton Vice President</b> and a <b>first-year student mentor</b>. Beyond that I love startups, learning, and building things.</p>
+      <p>On campus I serve as <b>MSA President</b>, <b>Badminton Vice President</b> and a <b>first-year student mentor</b>.</p>
+      <p>Lately I've been consuming and creating a lot of content, a steady diet of <b>podcasts</b>, more <b>Substack</b> than I'd like to admit (a recent obsession), and a <b>Pok&eacute;mon</b> habit I never grew out of. At heart I'm just a student who loves <b>startups, psychology, communication, and my family</b>.</p>
     </div>
     <div class="facts rv">
       <div class="f"><div class="l">Student</div><div class="v">Full-ride global scholar</div></div>
       <div class="f"><div class="l">Studying</div><div class="v">Econ &amp; Data Science, Sewanee</div></div>
-      <div class="f"><div class="l">Plays</div><div class="v">Badminton, cricket, soccer</div></div>
+      <div class="f"><div class="l">Plays</div><div class="v">Badminton, Cricket, Soccer</div></div>
       <div class="f"><div class="l">Team</div><div class="v">FC Barcelona</div></div>
       <div class="f"><div class="l">Leads</div><div class="v">MSA President</div></div>
-      <div class="f"><div class="l">Also</div><div class="v">Badminton VP, mentor</div></div>
+      <div class="f"><div class="l">Also</div><div class="v">Badminton VP, Mentor</div></div>
       <div class="f"><div class="l">Into</div><div class="v">Startups &amp; self-growth</div></div>
       <div class="f"><div class="l">Always</div><div class="v">Inquisitive</div></div>
+      <div class="f"><div class="l">Listens</div><div class="v">Podcasts, lots</div></div>
+      <div class="f"><div class="l">Reads</div><div class="v">Substack lately</div></div>
+      <div class="f"><div class="l">Loves</div><div class="v">Pok&eacute;mon</div></div>
+      <div class="f"><div class="l">Values</div><div class="v">Family</div></div>
     </div>
   </div>
 </section>
@@ -970,8 +970,15 @@
   (function(){
     var pw=document.querySelector('.photo-wrap'), pc=document.querySelector('.photo-card');
     if(pc&&pw){
-      pc.addEventListener('click',function(){ if(!pw.classList.contains('flip')) pw.classList.add('flip'); });
-      pw.addEventListener('animationend',function(e){ if(e.animationName==='flipY') pw.classList.remove('flip'); });
+      pc.addEventListener('click',function(){
+        if(pw.classList.contains('spinning')) return;
+        pw.classList.add('spinning');                    // tell the tilt handler to stand down
+        pw.style.transform='';                            // let the spin own the transform
+        pw.style.animation='flipY .9s ease-in-out';       // inline → fires instantly, beats hover's animation:none
+      });
+      pw.addEventListener('animationend',function(e){
+        if(e.animationName==='flipY'){ pw.classList.remove('spinning'); pw.style.animation=''; pw.style.transform=''; }
+      });
     }
   })();
 
@@ -1068,17 +1075,20 @@
     if(collage && pw){
       var craf = null;
       collage.addEventListener('mousemove', function(e){
+        if(pw.classList.contains('spinning')) return;      // don't fight the spin
         var r = collage.getBoundingClientRect();
         var px = (e.clientX - r.left) / r.width - .5;
         var py = (e.clientY - r.top) / r.height - .5;
         if(craf) return;
         craf = requestAnimationFrame(function(){
           craf = null;
+          if(pw.classList.contains('spinning')) return;
           pw.style.animation = 'none';
           pw.style.transform = 'rotateY(' + (px*18).toFixed(1) + 'deg) rotateX(' + (-py*12).toFixed(1) + 'deg)';
         });
       });
       collage.addEventListener('mouseleave', function(){
+        if(pw.classList.contains('spinning')) return;
         pw.style.transform = '';
         pw.style.animation = '';
       });
